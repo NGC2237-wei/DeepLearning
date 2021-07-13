@@ -1,10 +1,10 @@
 import sys
+from time import sleep
 
 import pygame.event
 
 from alien import Alien
 from bullet import Bullet
-from time import sleep
 
 
 def check_keydown_events(event, ai_settings, screen, ship, bullets):
@@ -27,18 +27,40 @@ def check_keyup_events(event, ship):
         ship.moving_left = False
 
 
-def check_events(ai_settings, screen, ship, bullets):
+def check_events(ai_settings, screen, stats, play_button, ship, aliens,
+                 bullets):
     """响应按键和鼠标事件"""
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             sys.exit()
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            mouse_x, mouse_y = pygame.mouse.get_pos()
+            check_play_button(ai_settings, screen, stats, play_button, ship, aliens,
+                              bullets, mouse_x, mouse_y)
         elif event.type == pygame.KEYDOWN:
             check_keydown_events(event, ai_settings, screen, ship, bullets)
         elif event.type == pygame.KEYUP:
             check_keyup_events(event, ship)
 
 
-def update_screen(ai_settings, screen, ship, aliens, bullets):
+def check_play_button(ai_settings, screen, stats, play_button, ship, aliens,
+                      bullets, mouse_x, mouse_y):
+    button_clicked = play_button.rect.collidepoint(mouse_x, mouse_y)
+    if button_clicked and not stats.game_active:
+        pygame.mouse.set_visible(False)
+        # 重置游戏统计信息
+        stats.reset_stats()
+        stats.game_active = True
+
+        # 清空外星人列表和子弹列表
+        aliens.empty()
+        bullets.empty()
+        # 创建一群新的外星人，并让飞船居中
+        create_fleet(ai_settings, screen, ship, aliens)
+        ship.center_ship()
+
+
+def update_screen(ai_settings, screen, stats, ship, aliens, bullets, play_button):
     """更新屏幕上的图像，并切换到新屏幕"""
     # 每次循环时都重绘屏幕
     screen.fill(ai_settings.bg_color)
@@ -47,6 +69,10 @@ def update_screen(ai_settings, screen, ship, aliens, bullets):
 
     ship.blitme()
     aliens.draw(screen)
+
+    if not stats.game_active:
+        play_button.draw_button()
+
     pygame.display.flip()
 
 
